@@ -37,12 +37,12 @@
               </ng-container>
               <mat-form-field fxFlex="70" *ngSwitchCase="'Decimal'">
                 <mat-label></mat-label>
-                <input type="number" matInput [formControlName]="field.name" [readOnly]="field.readOnly" [maxLength]="field.totalDigits" autocomplete="off">
+                <input matInput [formControlName]="field.name" [readOnly]="field.readOnly" [maxLength]="field.fractionDigits ? (field.totalDigits + 1) : field.totalDigits" autocomplete="off">
                 <mat-error>Invalid value</mat-error>
               </mat-form-field>
               <mat-form-field fxFlex="70" *ngSwitchCase="'Integer'">
                 <mat-label></mat-label>
-                <input type="number" matInput [formControlName]="field.name" [readOnly]="field.readOnly" [maxLength]="field.length" autocomplete="off">
+                <input matInput [formControlName]="field.name" [readOnly]="field.readOnly" [maxLength]="field.length" autocomplete="off">
                 <mat-error>Invalid value</mat-error>
               </mat-form-field>
               <mat-form-field fxFlex="70" *ngSwitchCase="'Date'">
@@ -56,7 +56,7 @@
                 <mat-label></mat-label>
                 <input matInput [formControlName]="field.name" [matAutocomplete]="auto" autocomplete="off">
                 <mat-autocomplete autoActiveFirstOption #auto="matAutocomplete">
-                  <mat-option *ngFor="let option of getLookupOptions(field.lookup)" [value]="option[field.lookup.key]">
+                  <mat-option *ngFor="let option of lookupControlSource[field.name] | async" [value]="option[field.lookup.key]">
                     {{option[field.lookup.value]}}
                   </mat-option>
                 </mat-autocomplete>

@@ -1,9 +1,11 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
-import { DataType, Entity, EntityFormField, EntityMetaData, Field, Lookup } from './../model/entity.model';
+import { DataType, Entity, EntityMetaData, Field, Lookup } from './../model/entity.model';
 import ENTITY_META_DATA from './entityMeta.json';
 import ENTITY_DATA from './entityData.json';
 import { FormBuilder, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
+import { startWith, map } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-entity',
@@ -16,6 +18,8 @@ export class EntityComponent implements OnInit {
   entity = ENTITY_DATA as Entity;
   entityForm: FormGroup;
   visibleFields: Field[];
+  lookupDict: {[key: string]: {[x: string]: string}[]} = {};
+  lookupControlSource: {[key: string]: Observable<{[x: string]: string}[]>} = {};
   @ViewChild('saveDialog') saveDialogTemplate: TemplateRef<any>;
 
   constructor(private fb: FormBuilder,
@@ -96,8 +100,18 @@ export class EntityComponent implements OnInit {
     const group = {};
     this.entityMetaData.field.forEach(field => {
       if (!field) { return; }
-      group[field.name] = new FormControl(this.entity ? this.entity[field.name]  || '' : '',
+      const formControl = new FormControl(this.entity ? this.entity[field.name]  || '' : '',
         this.getValidatorsForField(field));
+      if (field.dataType === DataType.LOOKUP && field.lookup && field.lookup.link) {
+        this.lookupDict[field.name] = this.getLookupOptions(field.lookup);
+        this.lookupControlSource[field.name] = formControl.valueChanges.pipe(
+          startWith(''),
+          map(val => this.lookupDict[field.name].filter(option => {
+            return option[field.lookup.key].toLowerCase().includes(val);
+          }))
+        );
+      }
+      group[field.name] = formControl;
     });
     this.entityForm = this.fb.group(group);
   }
@@ -112,15 +126,18 @@ export class EntityComponent implements OnInit {
       validators.push(Validators.maxLength(field.length));
     }
     if (field.dataType === DataType.INTEGER) {
-      validators.push(Validators.pattern(/^([-+])?\d{1, field.length}$/));
+      const pattern = `^([-+])?\\d{1,${field.length}}$`;
+      validators.push(Validators.pattern(pattern));
     }
     if (field.dataType === DataType.DECIMAL && field.totalDigits) {
       if (!field.fractionDigits) {
         field.fractionDigits = 0;
       }
+      const pattern1 = `^([-+])?\\d{1,${field.totalDigits}}$`;
       const digitsBeforeDecimal = field.totalDigits - field.fractionDigits;
-      const pattern = `^([-+])?\d{1, ${digitsBeforeDecimal}}` + field.fractionDigits ? `(\.\d{1, ${field.fractionDigits}})?` : '' + '$';
-      validators.push(Validators.pattern(new RegExp(pattern)));
+      const pattern2 = '^([-+])?' + `\\d{1,${digitsBeforeDecimal}}` + (field.fractionDigits ? `(\\.\\d{1,${field.fractionDigits}})?` : '') + '$';
+      const alternateRegexPatterns = [new RegExp(pattern1), new RegExp(pattern2)];
+      validators.push(Validators.pattern(new RegExp(alternateRegexPatterns.map(r => r.source).join('|'))));
     }
     return validators;
   }
