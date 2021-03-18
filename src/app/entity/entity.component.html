@@ -1,0 +1,84 @@
+<div class="mat-typography">
+  <mat-card fxFlex fxLayout="column">
+    <p class="mat-display-1" fxFlexAlign="center" fxLayoutAlign="center">Entity Editor</p>
+    <form [formGroup]="entityForm" (ngSubmit)="saveEntity()">
+      <div fxLayout="column" fxLayoutGap="20px">
+        <div fxLayout="row" fxLayoutGap="80px" fxLayoutAlign="start">
+          <div fxLayoutGap="30px" fxLayoutAlign="start center">
+            <div>Entity Type:</div>
+            <div>{{entityMetaData.name}}</div>
+          </div>
+          <div>
+            <button class="save-button" mat-raised-button color="primary" [disabled]="entityForm.invalid">Save</button>
+          </div>
+        </div>
+        <div class="mat-error" *ngIf="entityForm.invalid">*Fix all the errors in the form to Save.</div>
+        <div fxLayout="row wrap" fxLayoutGap="10px" fxLayoutAlign="start">
+          <div fxFlex="calc(33% - 20px)" fxLayout="row"
+            fxLayoutGap="10px" fxLayoutAlign="start center"
+            *ngFor="let field of visibleFields"
+          >
+            <ng-container *ngIf="field" [ngSwitch]="field.dataType">
+              <label fxFlex="30">{{field.label}}:</label>
+              <ng-container *ngSwitchCase="'String'">
+                <mat-form-field fxFlex="70" *ngIf="!field.allowedValues">
+                  <mat-label></mat-label>
+                  <input matInput [formControlName]="field.name" [readOnly]="field.readOnly" [maxLength]="field.length" autocomplete="off">
+                  <mat-error>Invalid value</mat-error>
+                </mat-form-field>
+                <mat-form-field fxFlex="70" *ngIf="field.allowedValues">
+                  <mat-label></mat-label>
+                  <mat-select [formControlName]="field.name">
+                    <mat-option>None</mat-option>
+                    <mat-option *ngFor="let option of field.allowedValues" [value]="option">{{option}}</mat-option>
+                  </mat-select>
+                  <mat-error>Invalid value</mat-error>
+                </mat-form-field>
+              </ng-container>
+              <mat-form-field fxFlex="70" *ngSwitchCase="'Decimal'">
+                <mat-label></mat-label>
+                <input type="number" matInput [formControlName]="field.name" [readOnly]="field.readOnly" [maxLength]="field.totalDigits" autocomplete="off">
+                <mat-error>Invalid value</mat-error>
+              </mat-form-field>
+              <mat-form-field fxFlex="70" *ngSwitchCase="'Integer'">
+                <mat-label></mat-label>
+                <input type="number" matInput [formControlName]="field.name" [readOnly]="field.readOnly" [maxLength]="field.length" autocomplete="off">
+                <mat-error>Invalid value</mat-error>
+              </mat-form-field>
+              <mat-form-field fxFlex="70" *ngSwitchCase="'Date'">
+                <mat-label></mat-label>
+                <input matInput [matDatepicker]="picker" [formControlName]="field.name" readonly>
+                <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                <mat-datepicker #picker></mat-datepicker>
+                <mat-error>Invalid value</mat-error>
+              </mat-form-field>
+              <mat-form-field fxFlex="70" *ngSwitchCase="'lookup'">
+                <mat-label></mat-label>
+                <input matInput [formControlName]="field.name" [matAutocomplete]="auto" autocomplete="off">
+                <mat-autocomplete autoActiveFirstOption #auto="matAutocomplete">
+                  <mat-option *ngFor="let option of getLookupOptions(field.lookup)" [value]="option[field.lookup.key]">
+                    {{option[field.lookup.value]}}
+                  </mat-option>
+                </mat-autocomplete>
+                <mat-error>Invalid value</mat-error>
+              </mat-form-field>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+    </form>
+  </mat-card>
+</div>
+
+<ng-template #saveDialog let-data>
+  <h2 mat-dialog-title>Save Entity</h2>
+  <mat-dialog-content>
+    <pre>{{data | json}}</pre>
+  </mat-dialog-content>
+  <mat-dialog-actions>
+    <div fxFlex="100" fxLayoutAlign="start center">
+      <button mat-button mat-dialog-close color="primary">Close</button>
+    </div>
+  </mat-dialog-actions>
+</ng-template>
+
