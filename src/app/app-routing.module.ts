@@ -4,7 +4,7 @@ import { EntityComponent } from './entity/entity.component';
 
 
 const routes: Routes = [
-  { path: 'entity', component: EntityComponent }
+  { path: '', component: EntityComponent }
 ];
 
 @NgModule({
